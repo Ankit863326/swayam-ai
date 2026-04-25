@@ -1,0 +1,9 @@
+model_hi/
+model_en/
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+Data/speech.mp3
+

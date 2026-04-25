@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Speech Recognition</title>
+</head>
+<body>
+    <script>
+        let recognition;
+        let data_queue = []; 
+
+        function startRecognition() {
+            recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'hi';
+            recognition.continuous = true;      
+            recognition.interimResults = false; 
+
+            recognition.onresult = function(event) {
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        data_queue.push(event.results[i][0].transcript); 
+                    }
+                }
+            };
+
+            recognition.onend = function() {
+                recognition.start();
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Error:", event.error);
+                recognition.start(); 
+            };
+
+            recognition.start();
+        }
+        
+        startRecognition();
+    </script>
+</body>
+</html>
