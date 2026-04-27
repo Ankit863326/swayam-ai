@@ -1,8 +1,3 @@
-# ============================================================
-#  Backend/TextToSpeech.py  —  Swayam AI
-#  FIXED: cross-platform playback (Windows + Mac + Linux)
-# ============================================================
-
 import asyncio
 import os
 import sys
