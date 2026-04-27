@@ -1,104 +1,121 @@
+# ============================================================
+#  Backend/Chatbot.py  —  Swayam AI
+#  FIXED: cross-platform paths, memory limit, better model
+# ============================================================
+
 import datetime
 import os
 from json import dump, load
 from dotenv import load_dotenv
 from groq import Groq
 
-# Load environment variables
+# ── Config ───────────────────────────────────────────────────
 load_dotenv()
 
-Username = os.getenv("Username")
-Assistantname = os.getenv("Assistantname")
-GroqAPIKey = os.getenv("GroqAPIKey")
+Username      = os.getenv("Username",      "User")
+AssistantName = os.getenv("Assistantname", "Swayam")
+GroqAPIKey    = os.getenv("GroqAPIKey",    "")
 
 client = Groq(api_key=GroqAPIKey)
 
-messages: list = []
+CHAT_LOG    = os.path.join("Data", "ChatLog.json")
+MAX_HISTORY = 20   # keep last 20 messages to avoid context overflow
 
-System = f"""Hello, I am {Username}. You are a very accurate and advanced AI chatbot named {Assistantname} which also has real-time up-to-date information from the internet.
-*** Do not tell time until I ask, do not talk too much, just answer the question.***
-*** Reply in only English, even if the question is in Hindi, reply in English.***
-*** Do not provide notes in the output, just answer the question and never mention your training data. ***
+# ── System prompt (Jarvis personality) ───────────────────────
+System = f"""You are {AssistantName}, a highly advanced AI personal assistant for {Username}.
+You are inspired by J.A.R.V.I.S. — intelligent, precise, slightly witty, and always professional.
+
+PERSONALITY RULES:
+- Address the user as "{Username}" occasionally to feel personal.
+- Be concise. Do not write long paragraphs unless the user specifically asks for details.
+- Use a confident, calm tone. Avoid filler phrases like "Sure!", "Of course!", "Great question!".
+- For lists, use clean numbered format.
+- Never say "As an AI language model..." or mention your training data.
+- If asked about yourself, say you are {AssistantName}, a personal AI assistant created for {Username}.
+- Occasionally be slightly witty — one clever remark is better than none.
+
+FORMATTING:
+- Keep answers under 3 sentences for simple factual questions.
+- For multi-step answers, use numbered steps.
+- Do NOT add disclaimers or unnecessary notes.
+
+LANGUAGE: Always respond in English only.
+Real-time date/time will be provided in context.
 """
 
-SystemChatBot = [
-    {"role": "system", "content": System},
-]
+SystemChatBot = [{"role": "system", "content": System}]
 
-# Ensure Data folder exists
-try:
-    with open(r"Data\ChatLog.json", "r") as file:
-        messages = load(file)
-except FileNotFoundError:
-    # Make sure to handle the case where the Data directory might not exist
-    import os
-    os.makedirs("Data", exist_ok=True) 
-    with open(r"Data\ChatLog.json", "w") as file:
-        dump([], file, indent=4)
+# ── Ensure Data folder + log file exist ──────────────────────
+os.makedirs("Data", exist_ok=True)
+if not os.path.exists(CHAT_LOG):
+    with open(CHAT_LOG, "w", encoding="utf-8") as f:
+        dump([], f)
 
+
+# ── Helpers ──────────────────────────────────────────────────
 def RealtimeInformation():
-    current_date_time = datetime.datetime.now()
-    day = current_date_time.strftime("%A")
-    date = current_date_time.strftime("%d")
-    month = current_date_time.strftime("%B")
-    year = current_date_time.strftime("%Y")
-    hour = current_date_time.strftime("%H")
-    minute = current_date_time.strftime("%M")
-    second = current_date_time.strftime("%S")
+    now = datetime.datetime.now()
+    return (
+        f"Current Date & Time: {now.strftime('%A, %d %B %Y  %H:%M:%S')}\n"
+        f"Timezone: Local system time."
+    )
 
-    data = "Please use this real-time information if needed,\n"
-    data += f"Day: {day}\nDate: {date} {month} {year}\nTime: {hour}:{minute}:{second}"
-    return data
 
 def AnswerModifier(Answer):
-    lines = Answer.split("\n")
-    non_empty_lines = [line for line in lines if line.strip() != ""]
-    modified_answer = "\n".join(non_empty_lines)
-    return modified_answer
+    return "\n".join(l for l in Answer.split("\n") if l.strip())
 
+
+# ── Main chatbot function ─────────────────────────────────────
 def ChatBot(Query):
     try:
         # Load history
-        with open(r"Data\ChatLog.json", "r") as file:
-            messages = load(file)
+        with open(CHAT_LOG, "r", encoding="utf-8") as f:
+            messages = load(f)
+
+        # Trim to last MAX_HISTORY messages to avoid token overflow
+        messages = messages[-MAX_HISTORY:]
 
         messages.append({"role": "user", "content": Query})
 
         completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant", # This model is active and fast
-            messages=SystemChatBot
-            + [{"role": "system", "content": RealtimeInformation()}]
-            + messages,
-            max_tokens=1024,
-            temperature=0.7,
+            model="llama-3.3-70b-versatile",   # smarter model
+            messages=(
+                SystemChatBot
+                + [{"role": "system", "content": RealtimeInformation()}]
+                + messages
+            ),
+            max_tokens=2048,
+            temperature=0.65,
             top_p=1,
             stream=False,
             stop=None,
         )
 
         Answer = completion.choices[0].message.content
-        Answer = Answer.replace("</s>", "")
+        Answer = Answer.replace("</s>", "").strip()
 
         messages.append({"role": "assistant", "content": Answer})
 
-        # Save history
-        with open(r"Data\ChatLog.json", "w") as file:
-            dump(messages, file, indent=4)
+        # Save history (trimmed)
+        with open(CHAT_LOG, "w", encoding="utf-8") as f:
+            dump(messages, f, indent=4, ensure_ascii=False)
 
         return AnswerModifier(Answer)
 
     except Exception as e:
-        # 3. FIX: Print the error and STOP. Do not call ChatBot() again.
-        print(f"Error: {e}")
-        # Reset log if corrupted
-        with open(r"Data\ChatLog.json", "w") as file:
-            dump([], file, indent=4)
-        return "I encountered an error and could not process your request."
+        print(f"[ChatBot Error] {e}")
+        # Reset corrupted log
+        with open(CHAT_LOG, "w", encoding="utf-8") as f:
+            dump([], f)
+        return "I encountered an error. Please try again."
 
+
+# ── CLI test ─────────────────────────────────────────────────
 if __name__ == "__main__":
+    print(f"{AssistantName} CLI — type 'exit' to quit\n")
     while True:
-        user_input = input("You: ")
-        # Add an exit command
+        user_input = input(f"{Username}: ").strip()
         if user_input.lower() in ["exit", "bye", "quit"]:
             break
-        print(ChatBot(user_input))
+        if user_input:
+            print(f"{AssistantName}: {ChatBot(user_input)}\n")
