@@ -1,8 +1,3 @@
-# ============================================================
-#  Backend/Chatbot.py  —  Swayam AI
-#  FIXED: cross-platform paths, memory limit, better model
-# ============================================================
-
 import datetime
 import os
 from json import dump, load
