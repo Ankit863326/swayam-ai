@@ -1,9 +1,3 @@
-# ============================================================
-#  Backend/Automation.py  —  Swayam AI
-#  FIXED: cross-platform (no os.startfile Windows-only calls)
-# ============================================================
-
-import os
 import sys
 import asyncio
 from webbrowser import open as webopen
