@@ -1,7 +1,3 @@
-# ============================================================
-#  Frontend/GUI.py  —  Swayam AI  (Full Jarvis UI)
-# ============================================================
-
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QStackedWidget, QWidget,
     QLineEdit, QVBoxLayout, QHBoxLayout, QPushButton,
