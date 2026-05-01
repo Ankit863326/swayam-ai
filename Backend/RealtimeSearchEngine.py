@@ -1,8 +1,3 @@
-# ============================================================
-#  Backend/RealtimeSearchEngine.py  —  Swayam AI
-#  FIXED: cross-platform paths, search caching, better prompt
-# ============================================================
-
 import os
 import time
 import datetime
