@@ -1,8 +1,3 @@
-# ============================================================
-#  Main.py  —  Swayam AI
-#  FIXED: no hardcoded paths, cross-platform, clean threading
-# ============================================================
-
 import os
 import sys
 import json
