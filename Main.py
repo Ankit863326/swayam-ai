@@ -7,10 +7,10 @@ from asyncio import run
 from time import sleep
 from dotenv import load_dotenv
 
-# ── Load .env from project root ──────────────────────────────
-load_dotenv()   # auto-finds .env in the same folder as Main.py
+# ── Load .env ─────────────────────────────────────────────────
+load_dotenv()
 
-# ── Import GUI ───────────────────────────────────────────────
+# ── Import GUI ────────────────────────────────────────────────
 from Frontend.GUI import (
     GraphicalUserInterface,
     SetAssistantStatus,
@@ -23,14 +23,16 @@ from Frontend.GUI import (
     GetAssistantStatus,
 )
 
-# ── Import Backend ───────────────────────────────────────────
+# ── Import Backend ────────────────────────────────────────────
 from Backend.RealtimeSearchEngine import RealtimeSearchEngine
 from Backend.Automation           import Automation
 from Backend.SpeechToText         import listen_fast as SpeechRecognition
 from Backend.Chatbot              import ChatBot
 from Backend.TextToSpeech         import TextToSpeech
+from Backend.WakeWord             import wait_for_wake_word        # NEW
+from Backend.Memory               import add_conversation, get_context  # NEW
 
-# ── Config ───────────────────────────────────────────────────
+# ── Config ────────────────────────────────────────────────────
 Username      = os.getenv("Username",      "User")
 AssistantName = os.getenv("Assistantname", "Swayam")
 
@@ -45,7 +47,7 @@ subprocesses = []
 Functions = ["open", "close", "play", "system", "content", "google search", "youtube search"]
 
 
-# ── Setup helpers ────────────────────────────────────────────
+# ── Setup helpers ─────────────────────────────────────────────
 def ShowDefaultChatIfNoChats():
     os.makedirs("Data", exist_ok=True)
     os.makedirs(os.path.join("Frontend", "Files"), exist_ok=True)
@@ -98,21 +100,21 @@ def InitialExecution():
     print(f"[{AssistantName}] Ready.")
 
 
-# ── Main loop ────────────────────────────────────────────────
+# ── Main loop ─────────────────────────────────────────────────
 def MainExecution():
-    TaskExecution      = False
-    ImageExecution     = False
+    TaskExecution        = False
+    ImageExecution       = False
     ImageGenerationQuery = ""
 
-    # ── 1. Check for typed text input from GUI ────────────
+    # ── 1. Check typed input from GUI ─────────────────────
     text_input_path = TempDirectoryPath("TextInput.data")
     typed_query = ""
     if os.path.exists(text_input_path):
         typed_query = open(text_input_path, "r", encoding="utf-8").read().strip()
         if typed_query:
-            open(text_input_path, "w", encoding="utf-8").write("")   # clear it
+            open(text_input_path, "w", encoding="utf-8").write("")
 
-    # ── 2. If no typed input, listen via microphone ───────
+    # ── 2. Mic input if no typed input ────────────────────
     if typed_query:
         Query = typed_query
         print(f"[TextInput] {Query}")
@@ -138,12 +140,11 @@ def MainExecution():
         Decision = FirstLayerDMM(Query)
     except Exception as e:
         print(f"[Decision Error] {e}")
-        # Fallback: treat everything as a general chatbot query
         Decision = [f"general {Query}"]
 
     print(f"[Decision] {Decision}")
 
-    # ── 4. Process decision flags ─────────────────────────
+    # ── 4. Process flags ──────────────────────────────────
     G = any(i.startswith("general")  for i in Decision)
     R = any(i.startswith("realtime") for i in Decision)
 
@@ -181,6 +182,7 @@ def MainExecution():
         ShowTextToScreen(f"{AssistantName} : {Answer}")
         SetAssistantStatus("Answering...")
         TextToSpeech(Answer)
+        add_conversation(Query, Answer)   # MEMORY SAVE
         return
 
     for q in Decision:
@@ -190,6 +192,7 @@ def MainExecution():
             ShowTextToScreen(f"{AssistantName} : {Answer}")
             SetAssistantStatus("Answering...")
             TextToSpeech(Answer)
+            add_conversation(Query, Answer)   # MEMORY SAVE
             return
 
         elif q.startswith("realtime "):
@@ -198,6 +201,7 @@ def MainExecution():
             ShowTextToScreen(f"{AssistantName} : {Answer}")
             SetAssistantStatus("Answering...")
             TextToSpeech(Answer)
+            add_conversation(Query, Answer)   # MEMORY SAVE
             return
 
         elif q.strip() == "exit":
@@ -210,28 +214,26 @@ def MainExecution():
 
 # ── Threads ───────────────────────────────────────────────────
 def ListeningThread():
-    """Background thread: mic + text-input polling loop."""
     print("[Thread] Listening loop started.")
     while True:
         try:
+            wait_for_wake_word()   # WAKE WORD — waits for "Swayam"
             MainExecution()
         except Exception as e:
             print(f"[MainExecution Error] {e}")
-        # small pause to avoid CPU spin
         sleep(0.05)
 
 
 def GUIThread():
-    """Main (foreground) thread: PyQt6 GUI."""
     print("[Thread] GUI starting.")
     GraphicalUserInterface()
 
 
-# ── Entry ────────────────────────────────────────────────────
+# ── Entry ─────────────────────────────────────────────────────
 if __name__ == "__main__":
     InitialExecution()
 
     backend_thread = threading.Thread(target=ListeningThread, daemon=True)
     backend_thread.start()
 
-    GUIThread()   # must run on main thread (Qt requirement)
+    GUIThread()
