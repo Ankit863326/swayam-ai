@@ -26,7 +26,7 @@ from Frontend.GUI import (
 # ── Import Backend ────────────────────────────────────────────
 from Backend.RealtimeSearchEngine import RealtimeSearchEngine
 from Backend.Automation           import Automation
-from Backend.SpeechToText         import listen as SpeechRecognitionon
+from Backend.SpeechToText import listen as SpeechRecognition
 from Backend.Chatbot              import ChatBot
 from Backend.TextToSpeech         import TextToSpeech
 from Backend.WakeWord             import wait_for_wake_word        # NEW
@@ -124,6 +124,7 @@ def MainExecution():
             return
         SetAssistantStatus("Listening...")
         try:
+            from Backend.SpeechToText import listen as SpeechRecognition
             Query = SpeechRecognition()
             if not Query:
                 return
