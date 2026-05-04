@@ -26,7 +26,7 @@ from Frontend.GUI import (
 # ── Import Backend ────────────────────────────────────────────
 from Backend.RealtimeSearchEngine import RealtimeSearchEngine
 from Backend.Automation           import Automation
-from Backend.SpeechToText         import listen_fast as SpeechRecognition
+from Backend.SpeechToText         import listen as SpeechRecognitionon
 from Backend.Chatbot              import ChatBot
 from Backend.TextToSpeech         import TextToSpeech
 from Backend.WakeWord             import wait_for_wake_word        # NEW
