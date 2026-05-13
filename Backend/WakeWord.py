@@ -14,6 +14,6 @@ def wait_for_wake_word():
                 print(f"[WakeWord] Heard: {text}")
                 if WAKE_WORD in text:
                     print("✅ Swayam activated!")
-                    return
+                    return  # returns cleanly — MainExecution takes over
             except:
                 pass
