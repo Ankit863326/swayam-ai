@@ -29,8 +29,8 @@ from Backend.Automation           import Automation
 from Backend.SpeechToText import listen as SpeechRecognition
 from Backend.Chatbot              import ChatBot
 from Backend.TextToSpeech         import TextToSpeech
-from Backend.WakeWord             import wait_for_wake_word        # NEW
-from Backend.Memory               import add_conversation, get_context  # NEW
+from Backend.WakeWord             import wait_for_wake_word
+from Backend.Memory               import add_conversation, get_context
 
 # ── Config ────────────────────────────────────────────────────
 Username      = os.getenv("Username",      "User")
@@ -183,7 +183,7 @@ def MainExecution():
         ShowTextToScreen(f"{AssistantName} : {Answer}")
         SetAssistantStatus("Answering...")
         TextToSpeech(Answer)
-        add_conversation(Query, Answer)   # MEMORY SAVE
+        add_conversation(Query, Answer)
         return
 
     for q in Decision:
@@ -193,7 +193,7 @@ def MainExecution():
             ShowTextToScreen(f"{AssistantName} : {Answer}")
             SetAssistantStatus("Answering...")
             TextToSpeech(Answer)
-            add_conversation(Query, Answer)   # MEMORY SAVE
+            add_conversation(Query, Answer)
             return
 
         elif q.startswith("realtime "):
@@ -202,7 +202,7 @@ def MainExecution():
             ShowTextToScreen(f"{AssistantName} : {Answer}")
             SetAssistantStatus("Answering...")
             TextToSpeech(Answer)
-            add_conversation(Query, Answer)   # MEMORY SAVE
+            add_conversation(Query, Answer)
             return
 
         elif q.strip() == "exit":
@@ -218,10 +218,13 @@ def ListeningThread():
     print("[Thread] Listening loop started.")
     while True:
         try:
-            wait_for_wake_word()   # WAKE WORD — waits for "Swayam"
+            wait_for_wake_word()         # waits for "Swayam"
+            SetMicrophoneStatus("True")  # ✅ THE FIX — enable mic before MainExecution
             MainExecution()
+            SetMicrophoneStatus("False") # reset after command handled
         except Exception as e:
             print(f"[MainExecution Error] {e}")
+            SetMicrophoneStatus("False") # reset on error too
         sleep(0.05)
 
 
