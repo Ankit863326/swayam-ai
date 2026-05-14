@@ -8,7 +8,6 @@ from groq import Groq
 
 warnings.filterwarnings("ignore")
 
-# ── Config ───────────────────────────────────────────────────
 load_dotenv()
 
 Username      = os.getenv("Username",      "User")
@@ -23,11 +22,9 @@ client = Groq(api_key=GroqAPIKey)
 CHAT_LOG    = os.path.join("Data", "ChatLog.json")
 MAX_HISTORY = 20
 
-# ── Search result cache ───────────────────────────────────────
 _search_cache: dict = {}
-CACHE_TTL = 300   # 5 minutes
+CACHE_TTL = 300
 
-# ── System prompt ─────────────────────────────────────────────
 System = f"""You are {AssistantName}, an advanced AI assistant for {Username}.
 You have access to real-time web search results provided in the context.
 
@@ -52,11 +49,8 @@ if not os.path.exists(CHAT_LOG):
         dump([], f)
 
 
-# ── Web search ────────────────────────────────────────────────
 def GoogleSearch(query: str) -> str:
-    """Search DuckDuckGo + Wikipedia with 5-minute caching."""
     global _search_cache
-
     now = time.time()
     if query in _search_cache:
         cached_time, cached_result = _search_cache[query]
@@ -66,7 +60,6 @@ def GoogleSearch(query: str) -> str:
 
     search_data = ""
 
-    # 1. Wikipedia
     try:
         import wikipedia
         wiki = wikipedia.summary(query, sentences=2, auto_suggest=False)
@@ -74,7 +67,6 @@ def GoogleSearch(query: str) -> str:
     except Exception:
         pass
 
-    # 2. DuckDuckGo
     try:
         from duckduckgo_search import DDGS
         search_query = query
@@ -95,7 +87,6 @@ def GoogleSearch(query: str) -> str:
     return result
 
 
-# ── Helpers ───────────────────────────────────────────────────
 def AnswerModifier(Answer: str) -> str:
     return "\n".join(l for l in Answer.split("\n") if l.strip())
 
@@ -105,7 +96,6 @@ def CurrentDateTime() -> str:
     return f"Today is {now.strftime('%A, %d %B %Y')}. Time: {now.strftime('%H:%M')}."
 
 
-# ── Main search engine function ───────────────────────────────
 def RealtimeSearchEngine(prompt: str) -> str:
     global SystemChatBot
 
@@ -118,7 +108,6 @@ def RealtimeSearchEngine(prompt: str) -> str:
     print(f"[Search] {prompt}")
     search_results = GoogleSearch(prompt)
 
-    # inject search results into system
     SystemChatBot_with_search = SystemChatBot + [
         {"role": "system", "content": f"Search Results:\n{search_results}"},
         {"role": "system", "content": CurrentDateTime()},
@@ -154,7 +143,6 @@ def RealtimeSearchEngine(prompt: str) -> str:
         return "Search failed. Please check your internet connection and try again."
 
 
-# ── CLI test ─────────────────────────────────────────────────
 if __name__ == "__main__":
     print("Realtime Search Engine — type 'exit' to quit\n")
     while True:
