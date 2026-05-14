@@ -4,7 +4,6 @@ from json import dump, load
 from dotenv import load_dotenv
 from groq import Groq
 
-# ── Config ───────────────────────────────────────────────────
 load_dotenv()
 
 Username      = os.getenv("Username",      "User")
@@ -16,7 +15,6 @@ client = Groq(api_key=GroqAPIKey)
 CHAT_LOG    = os.path.join("Data", "ChatLog.json")
 MAX_HISTORY = 20
 
-# ── System prompt ─────────────────────────────────────────────
 System = f"""You are {AssistantName}, a highly advanced AI personal assistant for {Username}.
 You are inspired by J.A.R.V.I.S. — intelligent, precise, slightly witty, and always professional.
 
@@ -42,14 +40,12 @@ Real-time date/time will be provided in context.
 
 SystemChatBot = [{"role": "system", "content": System}]
 
-# ── Ensure Data folder + log file exist ──────────────────────
 os.makedirs("Data", exist_ok=True)
 if not os.path.exists(CHAT_LOG):
     with open(CHAT_LOG, "w", encoding="utf-8") as f:
         dump([], f)
 
 
-# ── Helpers ──────────────────────────────────────────────────
 def RealtimeInformation():
     now = datetime.datetime.now()
     return (
@@ -63,7 +59,6 @@ def AnswerModifier(Answer):
 
 
 def GetMemoryContext():
-    """Load last 10 conversations from memory.json as context."""
     memory_file = os.path.join("Data", "memory.json")
     if not os.path.exists(memory_file):
         return ""
@@ -82,25 +77,20 @@ def GetMemoryContext():
         return ""
 
 
-# ── Main chatbot function ─────────────────────────────────────
 def ChatBot(Query):
     try:
-        # Load chat history
         with open(CHAT_LOG, "r", encoding="utf-8") as f:
             messages = load(f)
 
         messages = messages[-MAX_HISTORY:]
         messages.append({"role": "user", "content": Query})
 
-        # Get memory context
         memory_context = GetMemoryContext()
 
-        # Build system messages
         system_messages = SystemChatBot + [
             {"role": "system", "content": RealtimeInformation()}
         ]
 
-        # Add memory if available
         if memory_context:
             system_messages.append({
                 "role": "system",
@@ -122,7 +112,6 @@ def ChatBot(Query):
 
         messages.append({"role": "assistant", "content": Answer})
 
-        # Save chat history
         with open(CHAT_LOG, "w", encoding="utf-8") as f:
             dump(messages, f, indent=4, ensure_ascii=False)
 
@@ -135,7 +124,6 @@ def ChatBot(Query):
         return "I encountered an error. Please try again."
 
 
-# ── CLI test ──────────────────────────────────────────────────
 if __name__ == "__main__":
     print(f"{AssistantName} CLI — type 'exit' to quit\n")
     while True:
