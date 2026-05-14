@@ -1,4 +1,5 @@
 import sys
+import os
 import asyncio
 from webbrowser import open as webopen
 from dotenv import load_dotenv
@@ -6,7 +7,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# ── System controls ───────────────────────────────────────────
 def System(command: str) -> bool:
     command = command.strip().lower()
     if sys.platform == "win32":
@@ -23,7 +23,6 @@ def System(command: str) -> bool:
         except Exception as e:
             print(f"[System Error] {e}")
     else:
-        # Linux/Mac: use amixer or applescript
         if command in ("mute", "unmute"):
             os.system("amixer set Master toggle 2>/dev/null")
         elif command == "volume up":
@@ -33,14 +32,12 @@ def System(command: str) -> bool:
     return True
 
 
-# ── App open / close ─────────────────────────────────────────
 def OpenApp(app_name: str) -> bool:
     try:
         from AppOpener import open as appopen
         appopen(app_name, match_closest=True, output=True, throw_error=True)
         return True
     except Exception:
-        # fallback to Google
         webopen(f"https://www.google.com/search?q={app_name}")
         return True
 
@@ -54,7 +51,6 @@ def CloseApp(app_name: str) -> bool:
         return False
 
 
-# ── Web & media ───────────────────────────────────────────────
 def PlayYoutube(query: str) -> bool:
     try:
         import pywhatkit
@@ -75,15 +71,12 @@ def GoogleSearch(topic: str) -> bool:
     return True
 
 
-# ── Content (open text file) ──────────────────────────────────
 def Content(topic: str) -> bool:
     topic = topic.replace("Content ", "").strip()
     filepath = os.path.join("Data", f"{topic.lower().replace(' ', '_')}.txt")
     os.makedirs("Data", exist_ok=True)
     with open(filepath, "w", encoding="utf-8") as f:
         f.write(f"AI Generated Content for: {topic}\n")
-
-    # cross-platform open
     if sys.platform == "win32":
         os.startfile(filepath)
     elif sys.platform == "darwin":
@@ -93,7 +86,6 @@ def Content(topic: str) -> bool:
     return True
 
 
-# ── Dispatcher ────────────────────────────────────────────────
 async def TranslateAndExecute(commands: list[str]):
     tasks = []
     for cmd in commands:
