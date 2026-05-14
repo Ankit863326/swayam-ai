@@ -10,6 +10,12 @@ keyboard
 cohere
 googlesearch-python
 edge-tts
-vosk
+whisper
+sounddevice
+scipy
+numpy
+SpeechRecognition
 pyaudio
+duckduckgo-search
+wikipedia
 PyQt6
