@@ -5,7 +5,7 @@ import scipy.io.wavfile as wav
 import tempfile
 import os
 
-# Load once at startup — use "base" for speed, "small" for better accuracy
+# Load once at startup
 try:
     model = whisper.load_model("base")
     print("[STT] Whisper model loaded.")
@@ -29,7 +29,6 @@ def listen():
         print(f"[STT Error] Microphone recording failed: {e}")
         return ""
 
-    # Save to temp file
     try:
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         wav.write(tmp.name, fs, audio)
@@ -37,7 +36,6 @@ def listen():
         print(f"[STT Error] Failed to save audio: {e}")
         return ""
 
-    # Transcribe
     try:
         result = model.transcribe(tmp.name, language="en")
         os.unlink(tmp.name)
@@ -52,5 +50,4 @@ def listen():
             pass
         return ""
 
-# Alias so both names work
 listen_fast = listen
